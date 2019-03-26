@@ -75,7 +75,7 @@
     <Compile Include="RegexHelper.cs" />
     <Compile Include="RupengPager.cs" />
     <Compile Include="SessionHelper.cs" />
-    <Compile Include="Sort.cs" />
+    <Compile Include="SortHelper.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
