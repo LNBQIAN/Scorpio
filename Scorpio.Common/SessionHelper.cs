@@ -16,7 +16,7 @@ namespace Common
         /// <returns></returns>
         public static object GetSession(string name)
         {
-            return HttpContext.Current.Session[name];
+                            return HttpContext.Current.Session[name];
         }
         /// <summary>
         /// 设置session
