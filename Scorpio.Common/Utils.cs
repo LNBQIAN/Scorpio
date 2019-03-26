@@ -13,13 +13,19 @@ using System.Configuration;
 using System.Reflection;
 using System.Web;
 using System.Runtime.Serialization.Json;
+using System.Net.Security;
+using System.ComponentModel;
+using System.Web.UI.WebControls;
+using System.Security.Cryptography.X509Certificates;
+using System.IO.Compression;
+using System.Threading;
 
 namespace Common
 {
     /// <summary>
     /// 系统帮助类
     /// </summary>
-    public class Utils
+    public static class Utils
     {
         #region 对象转换处理
         /// <summary>
@@ -1203,7 +1209,7 @@ namespace Common
         /// </summary>
         /// <param name="_filepath">文件相对路径</param>
         /// <returns>int</returns>
-        public static int GetFileSize(string _filepath)
+        public static int GetFileSize2(string _filepath)
         {
             if (string.IsNullOrEmpty(_filepath))
             {
@@ -2849,6 +2855,1538 @@ namespace Common
             string charset = Regex.Match(html, pattern).Groups["charset"].Value;
             try { return Encoding.GetEncoding(charset); }
             catch (ArgumentException) { return null; }
+        }
+        #endregion
+
+        #region 得到字符串长度，一个汉字长度为2
+        /// <summary>
+        /// 得到字符串长度，一个汉字长度为2
+        /// </summary>
+        /// <param name="inputString">参数字符串</param>
+        /// <returns></returns>
+        public static int StrLength(string inputString)
+        {
+            System.Text.ASCIIEncoding ascii = new System.Text.ASCIIEncoding();
+            int tempLen = 0;
+            byte[] s = ascii.GetBytes(inputString);
+            for (int i = 0; i < s.Length; i++)
+            {
+                if ((int)s[i] == 63)
+                    tempLen += 2;
+                else
+                    tempLen += 1;
+            }
+            return tempLen;
+        }
+        #endregion
+
+        #region 截取指定长度字符串
+        /// <summary>
+        /// 截取指定长度字符串
+        /// </summary>
+        /// <param name="inputString">要处理的字符串</param>
+        /// <param name="len">指定长度</param>
+        /// <returns>返回处理后的字符串</returns>
+        public static string ClipString(string inputString, int len)
+        {
+            bool isShowFix = false;
+            if (len % 2 == 1)
+            {
+                isShowFix = true;
+                len--;
+            }
+            System.Text.ASCIIEncoding ascii = new System.Text.ASCIIEncoding();
+            int tempLen = 0;
+            string tempString = "";
+            byte[] s = ascii.GetBytes(inputString);
+            for (int i = 0; i < s.Length; i++)
+            {
+                if ((int)s[i] == 63)
+                    tempLen += 2;
+                else
+                    tempLen += 1;
+
+                try
+                {
+                    tempString += inputString.Substring(i, 1);
+                }
+                catch
+                {
+                    break;
+                }
+
+                if (tempLen > len)
+                    break;
+            }
+
+            byte[] mybyte = System.Text.Encoding.Default.GetBytes(inputString);
+            if (isShowFix && mybyte.Length > len)
+                tempString += "…";
+            return tempString;
+        }
+        #endregion
+
+        #region 获得两个日期的间隔
+        /// <summary>
+        /// 获得两个日期的间隔
+        /// </summary>
+        /// <param name="DateTime1">日期一。</param>
+        /// <param name="DateTime2">日期二。</param>
+        /// <returns>日期间隔TimeSpan。</returns>
+        public static TimeSpan DateDiff(DateTime DateTime1, DateTime DateTime2)
+        {
+            TimeSpan ts1 = new TimeSpan(DateTime1.Ticks);
+            TimeSpan ts2 = new TimeSpan(DateTime2.Ticks);
+            TimeSpan ts = ts1.Subtract(ts2).Duration();
+            return ts;
+        }
+        #endregion
+
+        #region 格式化日期时间
+        /// <summary>
+        /// 格式化日期时间
+        /// </summary>
+        /// <param name="dateTime1">日期时间</param>
+        /// <param name="dateMode">显示模式</param>
+        /// <returns>0-9种模式的日期</returns>
+        public static string FormatDate(DateTime dateTime1, string dateMode)
+        {
+            switch (dateMode)
+            {
+                case "0":
+                    return dateTime1.ToString("yyyy-MM-dd");
+                case "1":
+                    return dateTime1.ToString("yyyy-MM-dd HH:mm:ss");
+                case "2":
+                    return dateTime1.ToString("yyyy/MM/dd");
+                case "3":
+                    return dateTime1.ToString("yyyy年MM月dd日");
+                case "4":
+                    return dateTime1.ToString("MM-dd");
+                case "5":
+                    return dateTime1.ToString("MM/dd");
+                case "6":
+                    return dateTime1.ToString("MM月dd日");
+                case "7":
+                    return dateTime1.ToString("yyyy-MM");
+                case "8":
+                    return dateTime1.ToString("yyyy/MM");
+                case "9":
+                    return dateTime1.ToString("yyyy年MM月");
+                default:
+                    return dateTime1.ToString();
+            }
+        }
+        #endregion
+
+        #region 得到随机日期
+        /// <summary>
+        /// 得到随机日期
+        /// </summary>
+        /// <param name="time1">起始日期</param>
+        /// <param name="time2">结束日期</param>
+        /// <returns>间隔日期之间的 随机日期</returns>
+        public static DateTime GetRandomTime(DateTime time1, DateTime time2)
+        {
+            Random random = new Random();
+            DateTime minTime = new DateTime();
+            DateTime maxTime = new DateTime();
+
+            System.TimeSpan ts = new System.TimeSpan(time1.Ticks - time2.Ticks);
+
+            // 获取两个时间相隔的秒数
+            double dTotalSecontds = ts.TotalSeconds;
+            int iTotalSecontds = 0;
+
+            if (dTotalSecontds > System.Int32.MaxValue)
+            {
+                iTotalSecontds = System.Int32.MaxValue;
+            }
+            else if (dTotalSecontds < System.Int32.MinValue)
+            {
+                iTotalSecontds = System.Int32.MinValue;
+            }
+            else
+            {
+                iTotalSecontds = (int)dTotalSecontds;
+            }
+
+
+            if (iTotalSecontds > 0)
+            {
+                minTime = time2;
+                maxTime = time1;
+            }
+            else if (iTotalSecontds < 0)
+            {
+                minTime = time1;
+                maxTime = time2;
+            }
+            else
+            {
+                return time1;
+            }
+
+            int maxValue = iTotalSecontds;
+
+            if (iTotalSecontds <= System.Int32.MinValue)
+                maxValue = System.Int32.MinValue + 1;
+
+            int i = random.Next(System.Math.Abs(maxValue));
+
+            return minTime.AddSeconds(i);
+        }
+        /// <summary>
+        /// 获取时间戳
+        /// </summary>
+        public static string GetRandomTimeSpan()
+        {
+            TimeSpan ts = DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            return Convert.ToInt64(ts.TotalSeconds).ToString();
+        }
+        #endregion
+
+        #region HTML转行成TEXT
+        /// <summary>
+        /// HTML转行成TEXT
+        /// </summary>
+        /// <param name="strHtml"></param>
+        /// <returns></returns>
+        public static string HtmlToTxt(string strHtml)
+        {
+            string[] aryReg ={
+            @"<script[^>]*?>.*?</script>",
+            @"<(\/\s*)?!?((\w+:)?\w+)(\w+(\s*=?\s*(([""'])(\\[""'tbnr]|[^\7])*?\7|\w+)|.{0})|\s)*?(\/\s*)?>",
+            @"([\r\n])[\s]+",
+            @"&(quot|#34);",
+            @"&(amp|#38);",
+            @"&(lt|#60);",
+            @"&(gt|#62);",
+            @"&(nbsp|#160);",
+            @"&(iexcl|#161);",
+            @"&(cent|#162);",
+            @"&(pound|#163);",
+            @"&(copy|#169);",
+            @"&#(\d+);",
+            @"-->",
+            @"<!--.*\n"
+            };
+
+            string newReg = aryReg[0];
+            string strOutput = strHtml;
+            for (int i = 0; i < aryReg.Length; i++)
+            {
+                Regex regex = new Regex(aryReg[i], RegexOptions.IgnoreCase);
+                strOutput = regex.Replace(strOutput, string.Empty);
+            }
+
+            strOutput.Replace("<", "");
+            strOutput.Replace(">", "");
+            strOutput.Replace("\r\n", "");
+
+
+            return strOutput;
+        }
+        #endregion
+
+        #region 判断对象是否为空
+        /// <summary>
+        /// 判断对象是否为空，为空返回true
+        /// </summary>
+        /// <typeparam name="T">要验证的对象的类型</typeparam>
+        /// <param name="data">要验证的对象</param>        
+        public static bool IsNullOrEmpty<T>(this T data)
+        {
+            //如果为null
+            if (data == null)
+            {
+                return true;
+            }
+
+            //如果为""
+            if (data.GetType() == typeof(String))
+            {
+                if (string.IsNullOrEmpty(data.ToString().Trim()) || data.ToString() == "")
+                {
+                    return true;
+                }
+            }
+
+            //如果为DBNull
+            if (data.GetType() == typeof(DBNull))
+            {
+                return true;
+            }
+
+            //不为空
+            return false;
+        }
+
+        /// <summary>
+        /// 判断对象是否为空，为空返回true
+        /// </summary>
+        /// <param name="data">要验证的对象</param>
+        public static bool IsNullOrEmpty(this object data)
+        {
+            //如果为null
+            if (data == null)
+            {
+                return true;
+            }
+
+            //如果为""
+            if (data.GetType() == typeof(String))
+            {
+                if (string.IsNullOrEmpty(data.ToString().Trim()))
+                {
+                    return true;
+                }
+            }
+
+            //如果为DBNull
+            if (data.GetType() == typeof(DBNull))
+            {
+                return true;
+            }
+
+            //不为空
+            return false;
+        }
+        #endregion      
+
+        #region 验证是否为浮点数
+        /// <summary>
+        /// 验证是否浮点数
+        /// </summary>
+        /// <param name="floatNum"></param>
+        /// <returns></returns>
+        public static bool IsFloat(this string floatNum)
+        {
+            //如果为空，认为验证不合格
+            if (IsNullOrEmpty(floatNum))
+            {
+                return false;
+            }
+            //清除要验证字符串中的空格
+            floatNum = floatNum.Trim();
+
+            //模式字符串
+            string pattern = @"^(-?\d+)(\.\d+)?$";
+
+            //验证
+            return RegexHelper.IsMatch(floatNum, pattern);
+        }
+        #endregion
+
+        #region 验证是否为整数
+        /// <summary>
+        /// 验证是否为整数 如果为空，认为验证不合格 返回false
+        /// </summary>
+        /// <param name="number">要验证的整数</param>        
+        public static bool IsInt(this string number)
+        {
+            //如果为空，认为验证不合格
+            if (IsNullOrEmpty(number))
+            {
+                return false;
+            }
+
+            //清除要验证字符串中的空格
+            number = number.Trim();
+
+            //模式字符串
+            string pattern = @"^[0-9]+[0-9]*$";
+
+            //验证
+            return RegexHelper.IsMatch(number, pattern);
+        }
+        #endregion
+
+        #region 验证是否为数字
+        /// <summary>
+        /// 验证是否为数字
+        /// </summary>
+        /// <param name="number">要验证的数字</param>        
+        public static bool IsNumber(this string number)
+        {
+            //如果为空，认为验证不合格
+            if (IsNullOrEmpty(number))
+            {
+                return false;
+            }
+
+            //清除要验证字符串中的空格
+            number = number.Trim();
+
+            //模式字符串
+            string pattern = @"^[0-9]+[0-9]*[.]?[0-9]*$";
+
+            //验证
+            return RegexHelper.IsMatch(number, pattern);
+        }
+        #endregion
+
+        #region 验证日期是否合法
+        /// <summary>
+        /// 是否是日期
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        public static bool IsDate(this object date)
+        {
+
+            //如果为空，认为验证合格
+            if (IsNullOrEmpty(date))
+            {
+                return false;
+            }
+            string strdate = date.ToString();
+            try
+            {
+                //用转换测试是否为规则的日期字符
+                date = Convert.ToDateTime(date).ToString("d");
+                return true;
+            }
+            catch
+            {
+                //如果日期字符串中存在非数字，则返回false
+                if (!IsInt(strdate))
+                {
+                    return false;
+                }
+
+                #region 对纯数字进行解析
+                //对8位纯数字进行解析
+                if (strdate.Length == 8)
+                {
+                    //获取年月日
+                    string year = strdate.Substring(0, 4);
+                    string month = strdate.Substring(4, 2);
+                    string day = strdate.Substring(6, 2);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+                    if (Convert.ToInt32(month) > 12 || Convert.ToInt32(day) > 31)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year + "-" + month + "-" + day).ToString("d");
+                    return true;
+                }
+
+                //对6位纯数字进行解析
+                if (strdate.Length == 6)
+                {
+                    //获取年月
+                    string year = strdate.Substring(0, 4);
+                    string month = strdate.Substring(4, 2);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+                    if (Convert.ToInt32(month) > 12)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year + "-" + month).ToString("d");
+                    return true;
+                }
+
+                //对5位纯数字进行解析
+                if (strdate.Length == 5)
+                {
+                    //获取年月
+                    string year = strdate.Substring(0, 4);
+                    string month = strdate.Substring(4, 1);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = year + "-" + month;
+                    return true;
+                }
+
+                //对4位纯数字进行解析
+                if (strdate.Length == 4)
+                {
+                    //获取年
+                    string year = strdate.Substring(0, 4);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year).ToString("d");
+                    return true;
+                }
+                #endregion
+
+                return false;
+            }
+
+        }
+        /// <summary>
+        /// 验证日期是否合法,对不规则的作了简单处理
+        /// </summary>
+        /// <param name="date">日期</param>
+        public static bool IsDate(ref string date)
+        {
+            //如果为空，认为验证合格
+            if (IsNullOrEmpty(date))
+            {
+                return true;
+            }
+
+            //清除要验证字符串中的空格
+            date = date.Trim();
+
+            //替换\
+            date = date.Replace(@"\", "-");
+            //替换/
+            date = date.Replace(@"/", "-");
+
+            //如果查找到汉字"今",则认为是当前日期
+            if (date.IndexOf("今") != -1)
+            {
+                date = DateTime.Now.ToString();
+            }
+
+            try
+            {
+                //用转换测试是否为规则的日期字符
+                date = Convert.ToDateTime(date).ToString("d");
+                return true;
+            }
+            catch
+            {
+                //如果日期字符串中存在非数字，则返回false
+                if (!IsInt(date))
+                {
+                    return false;
+                }
+
+                #region 对纯数字进行解析
+                //对8位纯数字进行解析
+                if (date.Length == 8)
+                {
+                    //获取年月日
+                    string year = date.Substring(0, 4);
+                    string month = date.Substring(4, 2);
+                    string day = date.Substring(6, 2);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+                    if (Convert.ToInt32(month) > 12 || Convert.ToInt32(day) > 31)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year + "-" + month + "-" + day).ToString("d");
+                    return true;
+                }
+
+                //对6位纯数字进行解析
+                if (date.Length == 6)
+                {
+                    //获取年月
+                    string year = date.Substring(0, 4);
+                    string month = date.Substring(4, 2);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+                    if (Convert.ToInt32(month) > 12)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year + "-" + month).ToString("d");
+                    return true;
+                }
+
+                //对5位纯数字进行解析
+                if (date.Length == 5)
+                {
+                    //获取年月
+                    string year = date.Substring(0, 4);
+                    string month = date.Substring(4, 1);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = year + "-" + month;
+                    return true;
+                }
+
+                //对4位纯数字进行解析
+                if (date.Length == 4)
+                {
+                    //获取年
+                    string year = date.Substring(0, 4);
+
+                    //验证合法性
+                    if (Convert.ToInt32(year) < 1900 || Convert.ToInt32(year) > 2100)
+                    {
+                        return false;
+                    }
+
+                    //拼接日期
+                    date = Convert.ToDateTime(year).ToString("d");
+                    return true;
+                }
+                #endregion
+
+                return false;
+            }
+        }
+        #endregion
+
+        /// <summary>
+        ///  //前台显示邮箱的掩码替换(由tzh@qq.com等替换成t*****@qq.com)
+        /// </summary>
+        /// <param name="Email">邮箱</param>
+        /// <returns></returns>
+        public static string GetEmail(string Email)
+        {
+
+            string strArg = "";
+            string SendEmail = "";
+            Match match = Regex.Match(Email, @"(\w)\w+@");
+
+            if (match.Success)
+            {
+                strArg = match.Groups[1].Value + "*****@";
+                SendEmail = Regex.Replace(Email, @"\w+@", strArg);
+            }
+            else
+                SendEmail = Email;
+            return SendEmail;
+        }
+
+        /// <summary>
+        /// 检查字符串是否存在与一个,组合到一起的字符串数组中
+        /// </summary>
+        /// <param name="strSplit">未分割的字符串</param>
+        /// <param name="split">分割符号</param>
+        /// <param name="targetValue">目标字符串</param>
+        /// <returns></returns>
+        public static bool CheckStringHasValue(string strSplit, char split, string targetValue)
+        {
+            string[] strList = strSplit.Split(split);
+            foreach (string str in strList)
+            {
+                if (targetValue == str)
+                    return true;
+            }
+            return false;
+        }
+
+        #region 枚举型相关操作
+
+        /// <summary>
+        /// 功能描述；获取枚举名称.传入枚举类型和枚举值
+        /// </summary>
+        /// <param name="enumType"></param>
+        /// <param name="intEnumValue"></param>
+        /// <returns></returns>
+        public static string GetEnumText<T>(int intEnumValue)
+        {
+            return Enum.GetName(typeof(T), intEnumValue);
+        }
+
+        /// <summary>
+        /// 功能描述:获取枚举项集合，传入枚举类型
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static IList<object> BindEnums<T>()
+        {
+            IList<object> _list = new List<object>();
+            //遍历枚举集合
+            foreach (int i in Enum.GetValues(typeof(T)))
+            {
+                var _selItem = new
+                {
+                    Value = i,
+                    Text = Enum.GetName(typeof(T), i)
+                };
+                _list.Add(_selItem);
+            }
+            return _list;
+        }
+
+        ///<summary>
+        /// 返回 Dic 枚举项，描述
+        ///</summary>
+        ///<param name="enumType"></param>
+        ///<returns>Dic枚举项，描述</returns>
+        public static Dictionary<string, string> BindEnums(Type enumType)
+        {
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            FieldInfo[] fieldinfos = enumType.GetFields();
+            foreach (FieldInfo field in fieldinfos)
+            {
+                if (field.FieldType.IsEnum)
+                {
+                    Object[] objs = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+
+                    dic.Add(field.Name, ((DescriptionAttribute)objs[0]).Description);
+                }
+
+            }
+
+            return dic;
+        }
+        ///<summary>
+        /// 返回 List《Enums.EnumsClass》 枚举值、名称、描述
+        ///</summary>
+        public static List<Enums.EnumsClass> BindEnumsList(Type enumType)
+        {
+            var list = new List<Enums.EnumsClass>();
+            FieldInfo[] fieldinfos = enumType.GetFields();
+            var enumvalue = Enum.GetValues(enumType);
+            foreach (FieldInfo field in fieldinfos)
+            {
+                if (field.FieldType.IsEnum)
+                {
+                    int ev = -1;
+                    Object[] objs = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+                    foreach (int item in enumvalue)
+                    {
+                        if (Enum.GetName(enumType, item) == field.Name)
+                        {
+                            ev = item;
+                            break;
+                        }
+                    }
+                    list.Add(new Enums.EnumsClass
+                    {
+                        Name = field.Name,
+                        Value = ev,
+                        Text = ((DescriptionAttribute)objs[0]).Description
+                    });
+                }
+            }
+            return list;
+        }
+
+        #endregion
+
+        #region 获取集合中某个字段的拼接，例：获取姓名拼接
+
+        /// <summary>
+        /// 功能描述：获取集合中某个字段的拼接，例：获取姓名拼接
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="list">集合</param>
+        /// <param name="strFieldName">字段名</param>
+        /// <param name="strSplit">分隔符</param>
+        /// <returns></returns>
+        public static string GetFieldValueJoin<T>(IList<T> list, string strFieldName, string strSplit)
+        {
+            //判断入口
+            if (list == null || list.Count <= 0 || string.IsNullOrEmpty(strFieldName))
+                return string.Empty;
+
+
+            //获取属性
+            PropertyInfo _pro = typeof(T).GetProperty(strFieldName);
+            if (_pro == null)
+                return string.Empty;
+            //变量，记录返回值
+            string _strReturn = string.Empty;
+            foreach (T _entityI in list)
+            {
+                //获取属性值
+                object _objValue = _pro.GetValue(_entityI, null);
+                if (_objValue == null || string.IsNullOrEmpty(_objValue.ToString()))
+                    //没有属性值，则跳过
+                    continue;
+
+                //有属性值，则拼接
+                _strReturn += _objValue.ToString() + strSplit;
+            }
+
+            if (string.IsNullOrEmpty(_strReturn))
+                return string.Empty;
+
+            return _strReturn.Substring(0, _strReturn.Length - strSplit.Length);
+        }
+
+        #endregion
+
+
+        #region 数字金额转中文
+        public static char GetUpperDigit(char n)
+        {
+            if (false == char.IsDigit(n))
+            {
+                return n;
+            }
+            switch (n)
+            {
+                case '1':
+                    return '壹';
+                case '2':
+                    return '贰';
+                case '3':
+                    return '叁';
+                case '4':
+                    return '肆';
+                case '5':
+                    return '伍';
+                case '6':
+                    return '陆';
+                case '7':
+                    return '柒';
+                case '8':
+                    return '捌';
+                case '9':
+                    return '玖';
+                default:
+                    return '零';
+            }
+        }
+        /// <summary>
+        /// 获取中文数字
+        /// </summary>
+        /// <param name="digits">数字串（整数，亿以内）</param>
+        /// <returns></returns>
+        public static string GetUpperDigits(string digits)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < digits.Length; i++)
+            {
+                char digitChar = digits[i];
+                if (digitChar != '0'
+                    || digits.Length == 1
+                    || (i - 1 >= 0 && digits[i - 1] != '0' && i + 1 < digits.Length && digits[i + 1] != '0'))
+                {
+                    sb.Append(GetUpperDigit(digitChar));
+                }
+                if (digitChar == '0')
+                {
+                    continue;
+                }
+                switch ((digits.Length - i - 1) % 6)
+                {
+                    case 1:
+                        sb.Append("拾");
+                        break;
+                    case 2:
+                        sb.Append("佰");
+                        break;
+                    case 3:
+                        sb.Append("仟");
+                        break;
+                    case 4:
+                        sb.Append("万");
+                        break;
+                    case 5:
+                        sb.Append("亿");
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+        #endregion
+
+        #region FTP下载文件
+        public static void Download(string sourceFilePath, string desFilePath, string fileName, string ftpUser, string ftpPwd)
+        {
+            FtpWebRequest reqFTP;
+            FileStream outputStream = null;
+
+            try
+            {
+                if (!Directory.Exists(desFilePath))
+                {
+                    Directory.CreateDirectory(desFilePath);
+                }
+                reqFTP = (FtpWebRequest)FtpWebRequest.Create(new Uri(sourceFilePath + "/" + fileName));
+                reqFTP.Method = WebRequestMethods.Ftp.DownloadFile;
+                reqFTP.UseBinary = true;
+                reqFTP.Credentials = new NetworkCredential(ftpUser, ftpPwd);
+                reqFTP.Timeout = 40000;
+                FtpWebResponse response = (FtpWebResponse)reqFTP.GetResponse();
+                Stream ftpStream = response.GetResponseStream();
+                long cl = response.ContentLength;
+                int bufferSize = 2048;
+                int readCount;
+                byte[] buffer = new byte[bufferSize];
+                outputStream = new FileStream(desFilePath + "\\" + fileName, FileMode.Create);
+                readCount = ftpStream.Read(buffer, 0, bufferSize);
+                while (readCount > 0)
+                {
+                    outputStream.Write(buffer, 0, readCount);
+                    readCount = ftpStream.Read(buffer, 0, bufferSize);
+                }
+
+                ftpStream.Close();
+                outputStream.Close();
+                response.Close();
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show(ex.Message);
+                if (outputStream != null)
+                {
+                    outputStream.Close();
+                }
+            }
+        }
+        #endregion
+
+        #region 压缩及解压
+        // 读入大小
+        const int SIZE = 10240;
+
+        /// <summary>
+        /// 编码方式
+        /// </summary>
+        public readonly static Encoding GZipEncoding = Encoding.UTF8;
+
+        /// <summary>
+        /// 解压缩
+        /// </summary>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static string Decompress(byte[] compressBuffer)
+        {
+            using (MemoryStream msDecompress = new MemoryStream())
+            {
+                var gzip = new GZipStream(new MemoryStream(compressBuffer), CompressionMode.Decompress);
+                int len = 0;
+                byte[] buffer = new byte[SIZE];
+                while ((len = gzip.Read(buffer, 0, buffer.Length)) != 0)
+                {
+                    msDecompress.Write(buffer, 0, len);
+                }
+                gzip.Close();
+                return GZipEncoding.GetString(msDecompress.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// 压缩
+        /// </summary>
+        /// <param name="buffer">要压缩的字节</param>
+        /// <returns></returns>
+        public static MemoryStream Compress(byte[] buffer)
+        {
+            var ms = new MemoryStream();
+            var compressedzipStream = new GZipStream(ms, CompressionMode.Compress, true);
+            compressedzipStream.Write(buffer, 0, buffer.Length);
+            compressedzipStream.Close();
+            return ms;
+        }
+        #endregion
+
+        #region 取文件MD5值
+        /// <summary>
+        ///  计算指定文件的MD5值
+        /// </summary>
+        /// <param name="fileName">指定文件的完全限定名称</param>
+        /// <returns>返回值的字符串形式</returns>
+        public static String ComputeMD5(String fileName)
+        {
+            String hashMD5 = String.Empty;
+            //检查文件是否存在，如果文件存在则进行计算，否则返回空值
+            if (File.Exists(fileName))
+            {
+                using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+                {
+                    //计算文件的MD5值
+                    System.Security.Cryptography.MD5 calculator = System.Security.Cryptography.MD5.Create();
+                    Byte[] buffer = calculator.ComputeHash(fs);
+                    calculator.Clear();
+                    //将字节数组转换成十六进制的字符串形式
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        stringBuilder.Append(buffer[i].ToString("x2"));
+                    }
+                    hashMD5 = stringBuilder.ToString();
+                }//关闭文件流
+            }//结束计算
+            return hashMD5;
+        }
+        #endregion
+
+        #region 以http方式调用对方接口(post+json)
+        /// <summary>  
+        /// 创建POST方式的HTTP请求  
+        /// </summary>  
+        public static string PostHttpResponse(string url, string jsonStr)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(jsonStr);
+
+            //设置https验证方式
+            if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+            {
+                ServicePointManager.ServerCertificateValidationCallback =
+                        new RemoteCertificateValidationCallback(CheckValidationResult);
+            }
+            HttpWebRequest request = WebRequest.Create(url) as HttpWebRequest;
+            request.Method = "POST";
+            request.ContentLength = data.Length;
+            request.ContentType = "application/x-www-form-urlencoded";
+
+            //发送POST数据  
+            using (Stream stream = request.GetRequestStream())
+            {
+                stream.Write(data, 0, data.Length);
+            }
+            return GetResponseString(request.GetResponse() as HttpWebResponse);
+        }
+
+        /// <summary>
+        /// 获取请求的数据
+        /// </summary>
+        private static string GetResponseString(HttpWebResponse webresponse)
+        {
+            using (Stream s = webresponse.GetResponseStream())
+            {
+                StreamReader reader = new StreamReader(s, Encoding.UTF8);
+                return reader.ReadToEnd();
+
+            }
+        }
+
+        public static bool CheckValidationResult(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+        {
+            //直接确认，否则打不开    
+            return true;
+        }
+        #endregion
+
+
+        /// <summary>
+        /// 　常用工具类——文件操作类
+        /// <para>　---------------------------------------------------------------------------------------</para>
+        /// <para>　FilesUpload：工具方法：ASP.NET上传文件的方法</para>
+        /// <para>　FileExists：返回文件是否存在</para>
+        /// <para>　IsImgFilename：判断文件名是否为浏览器可以直接显示的图片文件名</para>
+        /// <para>　CopyFiles：复制指定目录的所有文件</para>
+        /// <para>　MoveFiles：移动指定目录的所有文件</para>
+        /// <para>　DeleteDirectoryFiles：删除指定目录的所有文件和子目录</para>
+        /// <para>　DeleteFiles：删除指定目录下的指定文件</para>
+        /// <para>　CreateDirectory：创建指定目录</para>
+        /// <para>　CreateDirectory：建立子目录</para>
+        /// <para>　ReNameFloder：重命名文件夹</para>
+        /// <para>　DeleteDirectory：删除指定目录</para>
+        /// <para>　DirectoryIsExists：检测目录是否存在[+2方法重载]</para>
+        /// <para>　DeleteSubDirectory：删除指定目录的所有子目录,不包括对当前目录文件的删除</para>
+        /// <para>　GetFileWriteTime：获取文件最后修改时间</para>
+        /// <para>　GetFileExtension：返回指定路径的文件的扩展名</para>
+        /// <para>　IsHiddenFile：判断是否是隐藏文件</para>
+        /// <para>　ReadTxtFile：以只读方式读取文本文件</para>
+        /// <para>　WriteStrToTxtFile：将内容写入文本文件(如果文件path存在就打开，不存在就新建)</para>
+        /// <para>　GetLocalDrives：获取本地驱动器名列表</para>
+        /// <para>　GetAppCurrentDirectory：获取应用程序当前可执行文件的路径</para>
+        /// <para>　GetFileSize：获取文件大小并以B，KB，GB，TB方式表示[+2 重载]</para>
+        /// <para>　DownLoadFiles:下载文件</para>
+        /// </summary>
+        private const string PATH_SPLIT_CHAR = "\\";
+
+        #region 工具方法：ASP.NET上传文件的方法
+        /// <summary>
+        /// 工具方法：上传文件的方法
+        /// </summary>
+        /// <param name="myFileUpload">上传控件的ID</param>
+        /// <param name="allowExtensions">允许上传的扩展文件名类型,如：string[] allowExtensions = { ".doc", ".xls", ".ppt", ".jpg", ".gif" };</param>
+        /// <param name="maxLength">允许上传的最大大小，以M为单位</param>
+        /// <param name="savePath">保存文件的目录，注意是绝对路径,如：Server.MapPath("~/upload/");</param>
+        /// <param name="saveName">保存的文件名，如果是""则以原文件名保存</param>
+        public static void FilesUpload(FileUpload myFileUpload, string[] allowExtensions, int maxLength, string savePath, string saveName)
+        {
+            // 文件格式是否允许上传
+            bool fileAllow = false;
+            //检查是否有文件案
+            if (myFileUpload.HasFile)
+            {
+                // 检查文件大小, ContentLength获取的是字节，转成M的时候要除以2次1024
+                if (myFileUpload.PostedFile.ContentLength / 1024 / 1024 >= maxLength)
+                {
+                    throw new Exception("只能上传小于2M的文件！");
+                }
+                //取得上传文件之扩展文件名，并转换成小写字母
+                string fileExtension = System.IO.Path.GetExtension(myFileUpload.FileName).ToLower();
+                string tmp = "";   // 存储允许上传的文件后缀名
+                                   //检查扩展文件名是否符合限定类型
+                for (int i = 0; i < allowExtensions.Length; i++)
+                {
+                    tmp += i == allowExtensions.Length - 1 ? allowExtensions[i] : allowExtensions[i] + ",";
+                    if (fileExtension == allowExtensions[i])
+                    {
+                        fileAllow = true;
+                    }
+                }
+                if (fileAllow)
+                {
+                    try
+                    {
+                        string path = savePath + (saveName == "" ? myFileUpload.FileName : saveName);
+                        //存储文件到文件夹
+                        myFileUpload.SaveAs(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception(ex.Message);
+                    }
+                }
+                else
+                {
+                    throw new Exception("文件格式不符，可以上传的文件格式为：" + tmp);
+                }
+            }
+            else
+            {
+                throw new Exception("请选择要上传的文件！");
+            }
+        }
+        #endregion
+
+        #region 返回文件是否存在
+        /// <summary>
+        /// 返回文件是否存在
+        /// </summary>
+        /// <param name="filename">文件名</param>
+        /// <returns>是否存在</returns>
+        //public static bool FileExists(string filename)
+        //{
+        //    return System.IO.File.Exists(filename);
+        //}
+        #endregion
+
+        #region 判断文件名是否为浏览器可以直接显示的图片文件名
+        /// <summary>
+        /// 判断文件名是否为浏览器可以直接显示的图片文件名
+        /// </summary>
+        /// <param name="filename">文件名</param>
+        /// <returns>是否可以直接显示</returns>
+        public static bool IsImgFilename(string filename)
+        {
+            filename = filename.Trim();
+            if (filename.EndsWith(".") || filename.IndexOf(".") == -1)
+            {
+                return false;
+            }
+            string extname = filename.Substring(filename.LastIndexOf(".") + 1).ToLower();
+            return (extname == "jpg" || extname == "jpeg" || extname == "png" || extname == "bmp" || extname == "gif");
+        }
+        #endregion
+
+        #region 复制指定目录的所有文件
+        /// <summary>
+        /// 复制指定目录的所有文件
+        /// </summary>
+        /// <param name="sourceDir">原始目录</param>
+        /// <param name="targetDir">目标目录</param>
+        /// <param name="overWrite">如果为true,覆盖同名文件,否则不覆盖</param>
+        /// <param name="copySubDir">如果为true,包含目录,否则不包含</param>
+        public static void CopyFiles(string sourceDir, string targetDir, bool overWrite, bool copySubDir)
+        {
+            //复制当前目录文件
+            foreach (string sourceFileName in Directory.GetFiles(sourceDir))
+            {
+                string targetFileName = Path.Combine(targetDir, sourceFileName.Substring(sourceFileName.LastIndexOf(PATH_SPLIT_CHAR) + 1));
+
+                if (File.Exists(targetFileName))
+                {
+                    if (overWrite == true)
+                    {
+                        File.SetAttributes(targetFileName, FileAttributes.Normal);
+                        File.Copy(sourceFileName, targetFileName, overWrite);
+                    }
+                }
+                else
+                {
+                    File.Copy(sourceFileName, targetFileName, overWrite);
+                }
+            }
+        }
+        #endregion
+
+        #region 移动指定目录的所有文件
+        /// <summary>
+        /// 移动指定目录的所有文件
+        /// </summary>
+        /// <param name="sourceDir">原始目录</param>
+        /// <param name="targetDir">目标目录</param>
+        /// <param name="overWrite">如果为true,覆盖同名文件,否则不覆盖</param>
+        /// <param name="moveSubDir">如果为true,包含目录,否则不包含</param>
+        public static void MoveFiles(string sourceDir, string targetDir, bool overWrite, bool moveSubDir)
+        {
+            //移动当前目录文件
+            foreach (string sourceFileName in Directory.GetFiles(sourceDir))
+            {
+                string targetFileName = Path.Combine(targetDir, sourceFileName.Substring(sourceFileName.LastIndexOf(PATH_SPLIT_CHAR) + 1));
+                if (File.Exists(targetFileName))
+                {
+                    if (overWrite == true)
+                    {
+                        File.SetAttributes(targetFileName, FileAttributes.Normal);
+                        File.Delete(targetFileName);
+                        File.Move(sourceFileName, targetFileName);
+                    }
+                }
+                else
+                {
+                    File.Move(sourceFileName, targetFileName);
+                }
+            }
+            if (moveSubDir)
+            {
+                foreach (string sourceSubDir in Directory.GetDirectories(sourceDir))
+                {
+                    string targetSubDir = Path.Combine(targetDir, sourceSubDir.Substring(sourceSubDir.LastIndexOf(PATH_SPLIT_CHAR) + 1));
+                    if (!Directory.Exists(targetSubDir))
+                        Directory.CreateDirectory(targetSubDir);
+                    MoveFiles(sourceSubDir, targetSubDir, overWrite, true);
+                    Directory.Delete(sourceSubDir);
+                }
+            }
+        }
+        #endregion
+
+        #region 删除指定目录的所有文件和子目录
+        /// <summary>
+        /// 删除指定目录的所有文件和子目录
+        /// </summary>
+        /// <param name="TargetDir">操作目录</param>
+        /// <param name="delSubDir">如果为true,包含对子目录的操作</param>
+        public static void DeleteDirectoryFiles(string TargetDir, bool delSubDir)
+        {
+            foreach (string fileName in Directory.GetFiles(TargetDir))
+            {
+                File.SetAttributes(fileName, FileAttributes.Normal);
+                File.Delete(fileName);
+            }
+            if (delSubDir)
+            {
+                DirectoryInfo dir = new DirectoryInfo(TargetDir);
+                foreach (DirectoryInfo subDi in dir.GetDirectories())
+                {
+                    DeleteDirectoryFiles(subDi.FullName, true);
+                    subDi.Delete();
+                }
+            }
+        }
+        #endregion
+
+        #region 删除指定目录下的指定文件
+        /// <summary>
+        /// 删除指定目录下的指定文件
+        /// </summary>
+        /// <param name="TargetFileDir">指定文件的目录</param>
+        public static void DeleteFiles(string TargetFileDir)
+        {
+            File.Delete(TargetFileDir);
+        }
+        #endregion
+
+        #region 创建指定目录
+        /// <summary>
+        /// 创建指定目录
+        /// </summary>
+        /// <param name="targetDir"></param>
+        public static void CreateDirectory(string targetDir)
+        {
+            DirectoryInfo dir = new DirectoryInfo(targetDir);
+            if (!dir.Exists)
+                dir.Create();
+        }
+        #endregion
+
+        #region 建立子目录
+        /// <summary>
+        /// 建立子目录
+        /// </summary>
+        /// <param name="parentDir">目录路径</param>
+        /// <param name="subDirName">子目录名称</param>
+        public static void CreateDirectory(string parentDir, string subDirName)
+        {
+            CreateDirectory(parentDir + PATH_SPLIT_CHAR + subDirName);
+        }
+        #endregion
+
+        #region 重命名文件夹
+        /// <summary>
+        /// 重命名文件夹
+        /// </summary>
+        /// <param name="OldFloderName">原路径文件夹名称</param>
+        /// <param name="NewFloderName">新路径文件夹名称</param>
+        /// <returns></returns>
+        public static bool ReNameFloder(string OldFloderName, string NewFloderName)
+        {
+            try
+            {
+                if (Directory.Exists(HttpContext.Current.Server.MapPath("//") + OldFloderName))
+                {
+                    Directory.Move(HttpContext.Current.Server.MapPath("//") + OldFloderName, HttpContext.Current.Server.MapPath("//") + NewFloderName);
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        #endregion
+
+        #region 删除指定目录
+        /// <summary>
+        /// 删除指定目录
+        /// </summary>
+        /// <param name="targetDir">目录路径</param>
+        public static void DeleteDirectory(string targetDir)
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(targetDir);
+            if (dirInfo.Exists)
+            {
+                DeleteDirectoryFiles(targetDir, true);
+                dirInfo.Delete(true);
+            }
+        }
+        #endregion
+
+        #region 检测目录是否存在
+        /// <summary>
+        /// 检测目录是否存在
+        /// </summary>
+        /// <param name="StrPath">路径</param>
+        /// <returns></returns>
+        public static bool DirectoryIsExists(string StrPath)
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(StrPath);
+            return dirInfo.Exists;
+        }
+        /// <summary>
+        /// 检测目录是否存在
+        /// </summary>
+        /// <param name="StrPath">路径</param>
+        /// <param name="Create">如果不存在，是否创建</param>
+        public static void DirectoryIsExists(string StrPath, bool Create)
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(StrPath);
+            //return dirInfo.Exists;
+            if (!dirInfo.Exists)
+            {
+                if (Create) dirInfo.Create();
+            }
+        }
+        #endregion
+
+        #region 删除指定目录的所有子目录,不包括对当前目录文件的删除
+        /// <summary>
+        /// 删除指定目录的所有子目录,不包括对当前目录文件的删除
+        /// </summary>
+        /// <param name="targetDir">目录路径</param>
+        public static void DeleteSubDirectory(string targetDir)
+        {
+            foreach (string subDir in Directory.GetDirectories(targetDir))
+            {
+                DeleteDirectory(subDir);
+            }
+        }
+        #endregion
+
+        #region 获取文件最后修改时间
+        /// <summary>
+        /// 获取文件最后修改时间
+        /// </summary>
+        /// <param name="FileUrl">文件真实路径</param>
+        /// <returns></returns>
+        public static DateTime GetFileWriteTime(string FileUrl)
+        {
+            return File.GetLastWriteTime(FileUrl);
+        }
+        #endregion
+
+        #region 返回指定路径的文件的扩展名
+        /// <summary>
+        /// 返回指定路径的文件的扩展名
+        /// </summary>
+        /// <param name="PathFileName">完整路径的文件</param>
+        /// <returns></returns>
+        public static string GetFileExtension(string PathFileName)
+        {
+            return Path.GetExtension(PathFileName);
+        }
+        #endregion
+
+        #region 判断是否是隐藏文件
+        /// <summary>
+        /// 判断是否是隐藏文件
+        /// </summary>
+        /// <param name="path">文件路径</param>
+        /// <returns></returns>
+        public static bool IsHiddenFile(string path)
+        {
+            FileAttributes MyAttributes = File.GetAttributes(path);
+            string MyFileType = MyAttributes.ToString();
+            if (MyFileType.LastIndexOf("Hidden") != -1) //是否隐藏文件
+            {
+                return true;
+            }
+            else
+                return false;
+        }
+        #endregion
+
+        #region 以只读方式读取文本文件
+        /// <summary>
+        /// 以只读方式读取文本文件
+        /// </summary>
+        /// <param name="FilePath">文件路径及文件名</param>
+        /// <returns></returns>
+        public static string ReadTxtFile(string FilePath)
+        {
+            string content = "";//返回的字符串
+            using (FileStream fs = new FileStream(FilePath, FileMode.Open))
+            {
+                using (StreamReader reader = new StreamReader(fs, Encoding.UTF8))
+                {
+                    string text = string.Empty;
+                    while (!reader.EndOfStream)
+                    {
+                        text += reader.ReadLine() + "\r\n";
+                        content = text;
+                    }
+                }
+            }
+            return content;
+        }
+        #endregion
+
+        #region 将内容写入文本文件(如果文件path存在就打开，不存在就新建)
+        /// <summary>
+        /// 将内容写入文本文件(如果文件path存在就打开，不存在就新建)
+        /// </summary>
+        /// <param name="FilePath">文件路径</param>
+        /// <param name="WriteStr">要写入的内容</param>
+        /// <param name="FileModes">写入模式：append 是追加写, CreateNew 是覆盖</param>
+        public static void WriteStrToTxtFile(string FilePath, string WriteStr, FileMode FileModes)
+        {
+            FileStream fst = new FileStream(FilePath, FileModes);
+            StreamWriter swt = new StreamWriter(fst, System.Text.Encoding.GetEncoding("utf-8"));
+            swt.WriteLine(WriteStr);
+            swt.Close();
+            fst.Close();
+        }
+        #endregion
+
+        #region 获取本地驱动器名列表
+        /// <summary>
+        /// 获取本地驱动器名列表
+        /// </summary>
+        /// <returns></returns>
+        public static string[] GetLocalDrives()
+        {
+            return Directory.GetLogicalDrives();
+        }
+        #endregion
+
+        #region 获取文件大小并以B，KB，GB，TB方式表示[+2 重载]
+        /// <summary>
+        /// 获取文件大小并以B，KB，GB，TB方式表示
+        /// </summary>
+        /// <param name="File">文件(FileInfo类型)</param>
+        /// <returns></returns>
+        public static string GetFileSize(FileInfo File)
+        {
+            string Result = "";
+            long FileSize = File.Length;
+            if (FileSize >= 1024 * 1024 * 1024)
+            {
+                if (FileSize / 1024 * 1024 * 1024 * 1024 >= 1024) Result = string.Format("{0:############0.00} TB", (double)FileSize / 1024 * 1024 * 1024 * 1024);
+                else Result = string.Format("{0:####0.00} GB", (double)FileSize / 1024 * 1024 * 1024);
+            }
+            else if (FileSize >= 1024 * 1024) Result = string.Format("{0:####0.00} MB", (double)FileSize / 1024 * 1024);
+            else if (FileSize >= 1024) Result = string.Format("{0:####0.00} KB", (double)FileSize / 1024);
+            else Result = string.Format("{0:####0.00} Bytes", FileSize);
+            return Result;
+        }
+        /// <summary>
+        /// 获取文件大小并以B，KB，GB，TB方式表示
+        /// </summary>
+        /// <param name="FilePath">文件的具体路径</param>
+        /// <returns></returns>
+        public static string GetFileSize(string FilePath)
+        {
+            string Result = "";
+            FileInfo File = new FileInfo(FilePath);
+            long FileSize = File.Length;
+            if (FileSize >= 1024 * 1024 * 1024)
+            {
+                if (FileSize / 1024 * 1024 * 1024 * 1024 >= 1024) Result = string.Format("{0:########0.00} TB", (double)FileSize / 1024 * 1024 * 1024 * 1024);
+                else Result = string.Format("{0:####0.00} GB", (double)FileSize / 1024 * 1024 * 1024);
+            }
+            else if (FileSize >= 1024 * 1024) Result = string.Format("{0:####0.00} MB", (double)FileSize / 1024 * 1024);
+            else if (FileSize >= 1024) Result = string.Format("{0:####0.00} KB", (double)FileSize / 1024);
+            else Result = string.Format("{0:####0.00} Bytes", FileSize);
+            return Result;
+        }
+        #endregion
+
+        #region 下载文件
+        /// <summary>
+        /// 下载文件
+        /// </summary>
+        /// <param name="FileFullPath">下载文件下载的完整路径及名称</param>
+        public static void DownLoadFiles(string FileFullPath)
+        {
+            if (!string.IsNullOrEmpty(FileFullPath) && FileExists(FileFullPath))
+            {
+                FileInfo fi = new FileInfo(FileFullPath);//文件信息
+                FileFullPath = HttpUtility.UrlEncode(FileFullPath); //对文件名编码
+                FileFullPath = FileFullPath.Replace("+", "%20"); //解决空格被编码为"+"号的问题
+                HttpContext.Current.Response.Clear();
+                HttpContext.Current.Response.ContentType = "application/octet-stream";
+                HttpContext.Current.Response.AppendHeader("Content-Disposition", "attachment; filename=" + FileFullPath);
+                HttpContext.Current.Response.AppendHeader("content-length", fi.Length.ToString()); //文件长度
+                int chunkSize = 102400;//缓存区大小,可根据服务器性能及网络情况进行修改
+                byte[] buffer = new byte[chunkSize]; //缓存区
+                using (FileStream fs = fi.Open(FileMode.Open))  //打开一个文件流
+                {
+                    while (fs.Position >= 0 && HttpContext.Current.Response.IsClientConnected) //如果没到文件尾并且客户在线
+                    {
+                        int tmp = fs.Read(buffer, 0, chunkSize);//读取一块文件
+                        if (tmp <= 0) break; //tmp=0说明文件已经读取完毕,则跳出循环
+                        HttpContext.Current.Response.OutputStream.Write(buffer, 0, tmp);//向客户端传送一块文件
+                        HttpContext.Current.Response.Flush();//保证缓存全部送出
+                        Thread.Sleep(10);//主线程休息一下,以释放CPU
+                    }
+                }
+            }
         }
         #endregion
     }

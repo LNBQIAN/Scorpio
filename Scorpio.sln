@@ -48,6 +48,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scorpio.Memcache.Demo", "Sc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scorpio.Common.Demo", "Scorpio.Common.Demo\Scorpio.Common.Demo.csproj", "{34AA937D-F9CD-4C95-A554-A6C852F52762}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "网站1", "网站1", "{E4B56162-02B9-45E8-811D-B53EEC71C607}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

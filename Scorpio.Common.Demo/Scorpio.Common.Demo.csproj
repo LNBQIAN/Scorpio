@@ -49,5 +49,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Scorpio.Common\Scorpio.Common.csproj">
+      <Project>{0096ff97-94f7-4a54-bb49-4231e0881137}</Project>
+      <Name>Scorpio.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
