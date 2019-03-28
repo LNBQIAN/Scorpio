@@ -1,4 +1,5 @@
-﻿using ServiceStack.Redis;
+﻿using Scorpio.Redis.Web.Commom;
+using ServiceStack.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace Scorpio.Redis.Web.Controllers
 
         public ActionResult Index()
         {
+            //RedisHelper.Set("pwd", "aaaa");
+
             return View();
         }
 

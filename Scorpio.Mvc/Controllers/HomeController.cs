@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Scorpio.Mvc.Common;
+using Scorpio.Mvc.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -10,6 +12,11 @@ namespace Scorpio.Mvc.Controllers
     {
         public ActionResult Index()
         {
+            Shippers shippers = new Shippers();
+            shippers.CompanyName = "aaaaa";
+            shippers.Phone = "aaaaa";
+            Repository repository = new Repository();
+            repository.Add(shippers);
             return View();
         }
 

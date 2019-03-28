@@ -341,11 +341,13 @@ namespace Common
         }
         #endregion
 
+        #region MySqlHelper
 
+        #endregion
     }
     #endregion
 }
-#region list 扩展方法 Author:高兵兵
+#region list 扩展方法 
 public static class IListUtil
 {
     /// <summary>

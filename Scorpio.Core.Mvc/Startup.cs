@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Scorpio.Core.Mvc.Common;
 
 namespace Scorpio.Core.Mvc
 {
@@ -33,6 +34,15 @@ namespace Scorpio.Core.Mvc
 
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
+            //services.AddSingleton<IMyService, MyService>();
+
+            //services.AddScoped<IMyService, MyService>();
+
+            //services.AddTransient<IMyService, MyService>();
+
+            services.AddMyService();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -58,6 +68,24 @@ namespace Scorpio.Core.Mvc
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
+            });
+
+            app.UseWebSockets();
+
+            //自定义中间件加入到管道
+            app.UseMiddleware<MyMiddleware>();
+
+            app.Use(async (context, next) =>
+            {
+                //throw new NotImplementedException("一个使用匿名函数,但未实现具体内容的内联中间件");
+
+                // 这里不对 request 做任何处理,直接调用下一个中间件
+                await next.Invoke();
+            });
+
+            app.Run(async (context) =>
+            {
+                await context.Response.WriteAsync("Hello World!");
             });
         }
     }
