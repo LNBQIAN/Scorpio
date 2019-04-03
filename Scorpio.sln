@@ -50,6 +50,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scorpio.Common.Demo", "Scor
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Abp", "Abp", "{3E8C5BEB-9EFE-4608-ABA9-603C237850EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scorpio.Core.Web.Demo", "Scorpio.Core.Web.Demo\Scorpio.Core.Web.Demo.csproj", "{C5A7FC46-8B33-4D4B-84EF-1C97D824DE07}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -140,6 +142,10 @@ Global
 		{34AA937D-F9CD-4C95-A554-A6C852F52762}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34AA937D-F9CD-4C95-A554-A6C852F52762}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34AA937D-F9CD-4C95-A554-A6C852F52762}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5A7FC46-8B33-4D4B-84EF-1C97D824DE07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5A7FC46-8B33-4D4B-84EF-1C97D824DE07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5A7FC46-8B33-4D4B-84EF-1C97D824DE07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A7FC46-8B33-4D4B-84EF-1C97D824DE07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,6 +28,9 @@ namespace Scorpio.Core.WebApi
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
+            //添加cors 服务
+
+            services.AddCors(options =>options.AddPolicy("CorsSample", p => p.WithOrigins("http://localhost:5000").AllowAnyMethod().AllowAnyHeader()));
 
             #region Swagger
             //注册Swagger生成器，定义一个和多个Swagger 文档
@@ -69,6 +72,11 @@ namespace Scorpio.Core.WebApi
                 app.UseDeveloperExceptionPage();
             }
 
+
+
+            app.UseCors("CorsSample");
+
+
             app.UseMvc();
 
             //启用中间件服务生成Swagger作为JSON终结点
@@ -78,6 +86,7 @@ namespace Scorpio.Core.WebApi
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
             });
+            
         }
     }
 }

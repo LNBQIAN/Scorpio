@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Scorpio.Core.WebApi.Controllers
@@ -24,6 +25,7 @@ namespace Scorpio.Core.WebApi.Controllers
         /// <returns></returns>
         // GET api/values/5
         [HttpGet("{id}")]
+        [EnableCors("CorsSample")]
         public ActionResult<string> Get(int id)
         {
             return "value";

@@ -87,6 +87,27 @@ namespace Scorpio.Core.Mvc
             {
                 await context.Response.WriteAsync("Hello World!");
             });
+
+            //Run 短路管道，不会用Next请求委托 一般最后是用
+            //Map 匹配基于请求路径的请求委托 只接受路径 配置单独的中间件管道
+            //Use
+
+            //HandleMapTest(app);
+        }
+
+        private static void HandleMapTest(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                await context.Response.WriteAsync("aaaa");
+            });
+        }
+        private void ConfigureMapping(IApplicationBuilder app)
+        {
+            app.Map("/maptest", HandleMapTest);
+            app.MapWhen(context=> {
+                return context.Request.Query.ContainsKey("aaaa");
+            }, HandleMapTest);
         }
     }
 }
